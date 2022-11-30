@@ -3,6 +3,8 @@ const app = express();
 const bodyParser = require("body-parser");
 const connection = require("./database/database");
 const Pergunta = require("./database/Pergunta");
+const Resposta = require("./database/Resposta");
+
 //Database
 
 connection
@@ -18,14 +20,19 @@ connection
 app.set("view engine", "ejs");
 app.use(express.static("public"));
 
-//bodyParser
+//bodyParser - O body-parser é um módulo capaz de converter o body da requisição para vários formatos, por ex o JSON.
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 //rotas
 app.get("/", (req, res) => {
-  res.render("index");
+  Pergunta.findAll({ raw: true, order: [["id", "DESC"]] }).then((perguntas) => {
+    res.render("index", {
+      perguntas: perguntas,
+    });
+  });
 });
+//raw ira trazer apenas os dados principais | findAll é o metodo responsavel por buscar todas as perguntas da tabela e retornar pra gente. Equivalente ao SELECT * ALL FROM perguntas | Dentro dessa rota estou PESQUISANDO PELAS PERGUNTAS (pergunta.findALL), quando a pesquisa é feita, a lista de pergutnas é mandada pra variavel perguntas (.then((perguntas))), essa variavel é capturada e jogada pro render/frontend.
 
 app.get("/perguntar", (req, res) => {
   res.render("perguntar");
@@ -39,6 +46,23 @@ app.post("/salvarpergunta", (req, res) => {
     descricao: descricao,
   }).then(() => {
     res.redirect("/");
+  });
+});
+
+app.get("/pergunta/:id", (req, res) => {
+  var id = req.params.id;
+  Pergunta.findOne({
+    where: { id: id },
+  }).then((pergunta) => {
+    if (pergunta != undefined) {
+      //pergunta encontrada pelo id
+      res.render("pergunta", {
+        pergunta: pergunta,
+      });
+    } else {
+      res.redirect("/");
+      // pergunta nao encontrada
+    }
   });
 });
 
